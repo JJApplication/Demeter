@@ -132,4 +132,4 @@ dist
 #rust
 debug
 target
-*.sb
+*.db
