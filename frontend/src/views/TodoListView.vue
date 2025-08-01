@@ -137,7 +137,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore, useTodoStore } from '../stores/counter'
+import { useTodoStore } from '../stores/counter'
+import { useAuthStore } from '../stores/auth'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -433,9 +434,11 @@ onMounted(async () => {
   border-radius: 20px;
   padding: 0;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-  max-width: 400px;
-  width: 90%;
+  max-width: 500px;
+  width: 100%;
   animation: slideUp 0.3s ease;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .emoji-picker-header {
@@ -478,15 +481,21 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   gap: 10px;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .emoji-option {
   width: 40px;
   height: 40px;
+  min-width: 40px;
+  max-width: 40px;
   border: 2px solid #e1e5e9;
   border-radius: 10px;
   background: white;
   font-size: 1.3rem;
+  box-sizing: border-box;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;

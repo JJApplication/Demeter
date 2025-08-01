@@ -19,7 +19,7 @@
 **请求体**:
 ```json
 {
-  "username": "admin",
+  "username": "guest",
   "password": "password"
 }
 ```
@@ -29,7 +29,7 @@
 {
   "user": {
     "id": 1,
-    "username": "admin"
+    "username": "guest"
   },
   "message": "登录成功"
 }
@@ -379,7 +379,7 @@ const toggleTodo = async (id, completed) => {
 # 登录
 curl -X POST http://localhost:3000/api/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"password"}'
+  -d '{"username":"guest","password":"password"}'
 
 # 获取任务列表
 curl -X GET http://localhost:3000/api/todos
@@ -406,7 +406,7 @@ curl -X DELETE http://localhost:3000/api/todos/1
 2. **Emoji支持**: 支持所有Unicode emoji字符
 3. **数据库**: 使用SQLite，数据存储在 `todolist.db` 文件中
 4. **CORS**: 已配置允许前端域名访问
-5. **默认用户**: 系统会自动创建默认用户 `admin/password`
+5. **默认用户**: 系统会自动创建默认用户 `guest/password`
 
 ---
 

@@ -39,7 +39,7 @@ async fn extract_user_id(headers: &HeaderMap, db: &sqlx::SqlitePool) -> Result<i
 
     // 查询所有用户，验证token
     let users_result = sqlx::query_as::<_, User>(
-        "SELECT id, username, password_hash, public_access, created_at FROM users"
+        "SELECT id, username, password_hash, public_access, readonly, created_at FROM users"
     )
     .fetch_all(db)
     .await
@@ -54,13 +54,40 @@ async fn extract_user_id(headers: &HeaderMap, db: &sqlx::SqlitePool) -> Result<i
     Err(StatusCode::UNAUTHORIZED)
 }
 
+// 检查用户是否为只读用户
+async fn check_readonly_permission(headers: &HeaderMap, db: &sqlx::SqlitePool) -> Result<(), StatusCode> {
+    let auth_header = headers.get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|h| h.strip_prefix("Bearer "))
+        .ok_or(StatusCode::UNAUTHORIZED)?;
+
+    // 查询所有用户，验证token并检查readonly状态
+    let users_result = sqlx::query_as::<_, User>(
+        "SELECT id, username, password_hash, public_access, readonly, created_at FROM users"
+    )
+    .fetch_all(db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    for user in users_result {
+        if verify_token(auth_header, &user.username, &user.password_hash) {
+            if user.readonly {
+                return Err(StatusCode::FORBIDDEN);
+            }
+            return Ok(());
+        }
+    }
+
+    Err(StatusCode::UNAUTHORIZED)
+}
+
 // 获取公开访问状态
 pub async fn get_public_access_handler(
     State(state): State<AppState>,
 ) -> Result<Json<PublicAccessResponse>, StatusCode> {
     // 简化版本：获取第一个用户的公开访问设置
     let user_result = sqlx::query_as::<_, User>(
-        "SELECT id, username, password_hash, public_access, created_at FROM users LIMIT 1"
+        "SELECT id, username, password_hash, public_access, readonly, created_at FROM users LIMIT 1"
     )
     .fetch_optional(&state.db)
     .await;
@@ -87,6 +114,9 @@ pub async fn update_user_settings_handler(
     headers: HeaderMap,
     Json(payload): Json<UpdateUserSettingsRequest>,
 ) -> Result<Json<ApiResponse<UserResponse>>, StatusCode> {
+    // 检查只读权限
+    check_readonly_permission(&headers, &state.db).await?;
+    
     let user_id = extract_user_id(&headers, &state.db).await?;
     
     let result = sqlx::query(
@@ -101,7 +131,7 @@ pub async fn update_user_settings_handler(
         Ok(_) => {
             // 获取更新后的用户信息
             let user_result = sqlx::query_as::<_, User>(
-                "SELECT id, username, password_hash, public_access, created_at FROM users WHERE id = ?"
+                "SELECT id, username, password_hash, public_access, readonly, created_at FROM users WHERE id = ?"
             )
             .bind(user_id)
             .fetch_optional(&state.db)
@@ -132,7 +162,7 @@ pub async fn login_handler(
     Json(payload): Json<LoginRequest>,
 ) -> Result<Json<LoginResponse>, StatusCode> {
     let user_result = sqlx::query_as::<_, User>(
-        "SELECT id, username, password_hash, public_access, created_at FROM users WHERE username = ?"
+        "SELECT id, username, password_hash, public_access, readonly, created_at FROM users WHERE username = ?"
     )
     .bind(&payload.username)
     .fetch_optional(&state.db)
@@ -196,10 +226,12 @@ pub async fn register_handler(
     };
 
     let result = sqlx::query(
-        "INSERT INTO users (username, password_hash) VALUES (?, ?) RETURNING id, username, created_at"
+        "INSERT INTO users (username, password_hash, public_access, readonly) VALUES (?, ?, ?, ?) RETURNING id, username, created_at"
     )
     .bind(&payload.username)
     .bind(&password_hash)
+    .bind(false) // 新注册用户默认不公开
+    .bind(false) // 新注册用户默认不是只读
     .fetch_one(&state.db)
     .await;
 
@@ -209,6 +241,7 @@ pub async fn register_handler(
                 id: row.get("id"),
                 username: row.get("username"),
                 public_access: row.get("public_access"),
+                readonly: row.get("readonly"),
             };
             info!("新用户注册: {}", payload.username);
             Ok(Json(ApiResponse::success(user)))
@@ -234,7 +267,7 @@ pub async fn get_todos_handler(
     } else {
         // 用户未登录，检查是否有公开访问的用户
         let user_result = sqlx::query_as::<_, User>(
-            "SELECT id, username, password_hash, public_access, created_at FROM users WHERE public_access = true LIMIT 1"
+            "SELECT id, username, password_hash, public_access, readonly, created_at FROM users WHERE public_access = true LIMIT 1"
         )
         .fetch_optional(&state.db)
         .await;
@@ -278,6 +311,9 @@ pub async fn create_todo_handler(
     headers: HeaderMap,
     Json(payload): Json<CreateTodoRequest>,
 ) -> Result<Json<TodoResponse>, StatusCode> {
+    // 检查只读权限
+    check_readonly_permission(&headers, &state.db).await?;
+    
     let user_id = extract_user_id(&headers, &state.db).await?;
     let now = Utc::now();
     
@@ -322,6 +358,9 @@ pub async fn update_todo_handler(
     headers: HeaderMap,
     Json(payload): Json<UpdateTodoRequest>,
 ) -> Result<Json<TodoResponse>, StatusCode> {
+    // 检查只读权限
+    check_readonly_permission(&headers, &state.db).await?;
+    
     let user_id = extract_user_id(&headers, &state.db).await?;
     let now = Utc::now();
     
@@ -388,6 +427,9 @@ pub async fn delete_todo_handler(
     State(state): State<AppState>,
     headers: HeaderMap,
 ) -> Result<StatusCode, StatusCode> {
+    // 检查只读权限
+    check_readonly_permission(&headers, &state.db).await?;
+    
     let user_id = extract_user_id(&headers, &state.db).await?;
     
     let result = sqlx::query("DELETE FROM todos WHERE id = ? AND user_id = ?")
@@ -426,7 +468,7 @@ pub async fn get_history_handler(
     } else {
         // 用户未登录，检查是否有公开访问的用户
         let user_result = sqlx::query_as::<_, User>(
-            "SELECT id, username, password_hash, public_access, created_at FROM users WHERE public_access = true LIMIT 1"
+            "SELECT id, username, password_hash, public_access, readonly, created_at FROM users WHERE public_access = true LIMIT 1"
         )
         .fetch_optional(&state.db)
         .await;

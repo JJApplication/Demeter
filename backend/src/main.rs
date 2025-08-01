@@ -4,7 +4,7 @@ use axum::{
     Router,
 };
 use sqlx::sqlite::SqlitePool;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::{CorsLayer};
 use tracing::info;
 
 mod models;

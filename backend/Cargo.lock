@@ -332,6 +332,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "demeter-backend"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "base64 0.21.7",
+ "bcrypt",
+ "chrono",
+ "once_cell",
+ "serde",
+ "serde_json",
+ "sha2",
+ "sqlx",
+ "tokio",
+ "toml",
+ "tower 0.4.13",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
 name = "der"
 version = "0.7.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1877,29 +1900,6 @@ name = "tinyvec_macros"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
-
-[[package]]
-name = "todolist-backend"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum",
- "base64 0.21.7",
- "bcrypt",
- "chrono",
- "once_cell",
- "serde",
- "serde_json",
- "sha2",
- "sqlx",
- "tokio",
- "toml",
- "tower 0.4.13",
- "tower-http",
- "tracing",
- "tracing-subscriber",
- "uuid",
-]
 
 [[package]]
 name = "tokio"

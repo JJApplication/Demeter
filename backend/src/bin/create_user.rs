@@ -1,21 +1,37 @@
 use std::env;
-use std::io::{self, Write};
 use bcrypt;
-use sqlx::sqlite::SqlitePool;
+use sqlx::{sqlite::SqlitePool, Row};
 use anyhow::Result;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
     
-    if args.len() != 3 {
-        eprintln!("使用方法: {} <用户名> <密码>", args[0]);
+    if args.len() < 3 || args.len() > 5 {
+        eprintln!("使用方法: {} <用户名> <密码> [--public] [--readonly]", args[0]);
         eprintln!("示例: {} john mypassword", args[0]);
+        eprintln!("示例: {} john mypassword --public", args[0]);
+        eprintln!("示例: {} john mypassword --readonly", args[0]);
+        eprintln!("示例: {} john mypassword --public --readonly", args[0]);
         std::process::exit(1);
     }
     
     let username = &args[1];
     let password = &args[2];
+    let mut public_access = false;
+    let mut readonly = false;
+    
+    // 解析可选标志
+    for arg in &args[3..] {
+        match arg.as_str() {
+            "--public" => public_access = true,
+            "--readonly" => readonly = true,
+            _ => {
+                eprintln!("错误: 未知标志 '{}'", arg);
+                std::process::exit(1);
+            }
+        }
+    }
     
     // 验证输入
     if username.is_empty() || password.is_empty() {
@@ -57,17 +73,27 @@ async fn main() -> Result<()> {
     
     // 创建用户
     sqlx::query(
-        "INSERT INTO users (username, password_hash, public_access) VALUES (?, ?, ?)"
+        "INSERT INTO users (username, password_hash, public_access, readonly) VALUES (?, ?, ?, ?)"
     )
     .bind(username)
     .bind(&password_hash)
-    .bind(false) // 默认不公开访问
+    .bind(public_access)
+    .bind(readonly)
     .execute(&pool)
     .await?;
     
     println!("✅ 用户 '{}' 创建成功！", username);
-    println!("📝 默认设置: 任务列表不公开访问");
-    println!("🔧 可以在前端历史任务页面修改公开访问设置");
+    if public_access {
+        println!("🌐 设置: 任务列表公开访问");
+    } else {
+        println!("🔒 设置: 任务列表不公开访问");
+        println!("🔧 可以在前端历史任务页面修改公开访问设置");
+    }
+    if readonly {
+        println!("📖 设置: 只读用户 (无法创建、修改或删除任务)");
+    } else {
+        println!("✏️ 设置: 普通用户 (可以创建、修改和删除任务)");
+    }
     
     Ok(())
 }

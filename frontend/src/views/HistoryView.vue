@@ -155,7 +155,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { useTodoStore, useAuthStore } from '../stores/counter'
+import { useTodoStore } from '../stores/counter'
+import { useAuthStore } from '../stores/auth'
 
 interface ActivityDay {
   date: string
@@ -829,7 +830,7 @@ onMounted(async () => {
 }
 
 .floating-toggle .toggle-checkbox:checked + .toggle-icon {
-  background: linear-gradient(135deg, #4CAF50, #45a049);
+  background: linear-gradient(135deg, #4c90af, #0caabf);
 }
 
 @media (max-width: 768px) {

@@ -39,7 +39,7 @@
       </form>
       
       <div class="demo-info">
-        <p>演示账号: admin / password</p>
+        <p>演示账号: guest / password</p>
       </div>
     </div>
   </div>
@@ -48,7 +48,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/counter'
+import { useAuthStore } from '../stores/auth'
 
 const router = useRouter()
 const authStore = useAuthStore()

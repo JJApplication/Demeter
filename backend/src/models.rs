@@ -8,6 +8,7 @@ pub struct User {
     pub username: String,
     pub password_hash: String,
     pub public_access: bool,
+    pub readonly: bool,
     pub created_at: DateTime<Utc>,
 }
 
@@ -47,6 +48,7 @@ pub struct UserResponse {
     pub id: i64,
     pub username: String,
     pub public_access: bool,
+    pub readonly: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -139,6 +141,7 @@ impl From<User> for UserResponse {
             id: user.id,
             username: user.username,
             public_access: user.public_access,
+            readonly: user.readonly,
         }
     }
 }
