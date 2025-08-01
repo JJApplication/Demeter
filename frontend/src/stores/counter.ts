@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import axios from 'axios'
 import { useAuthStore } from './auth'
 
-const API_BASE = 'http://localhost:9999/api'
+const API_BASE = '/api'
 
 export interface Todo {
   id: number

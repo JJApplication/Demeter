@@ -2,7 +2,7 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import axios from 'axios'
 
-const API_BASE = 'http://localhost:9999/api'
+const API_BASE = '/api'
 
 export interface User {
   id: number
